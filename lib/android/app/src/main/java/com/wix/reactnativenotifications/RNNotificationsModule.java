@@ -32,12 +32,13 @@ import static com.wix.reactnativenotifications.Defs.LOGTAG;
 
 public class RNNotificationsModule extends ReactContextBaseJavaModule implements ActivityEventListener {
 
+    final private ReactContext mReactContext;
     public RNNotificationsModule(Application application, ReactApplicationContext reactContext) {
         super(reactContext);
         if (AppLifecycleFacadeHolder.get() instanceof ReactAppLifecycleFacade) {
             ((ReactAppLifecycleFacade) AppLifecycleFacadeHolder.get()).init(reactContext);
         }
-
+        mReactContext = reactContext;
         reactContext.addActivityEventListener(this);
     }
 
@@ -146,6 +147,6 @@ public class RNNotificationsModule extends ReactContextBaseJavaModule implements
         final Context appContext = getReactApplicationContext().getApplicationContext();
         final Intent tokenFetchIntent = new Intent(appContext, FcmInstanceIdRefreshHandlerService.class);
         tokenFetchIntent.putExtra(extraFlag, true);
-        FcmInstanceIdRefreshHandlerService.enqueueWork(appContext, tokenFetchIntent);
+        FcmInstanceIdRefreshHandlerService.enqueueWork(appContext, tokenFetchIntent, mReactContext);
     }
 }
