@@ -17,24 +17,27 @@ import static com.wix.reactnativenotifications.Defs.TOKEN_RECEIVED_EVENT_NAME;
 public class FcmToken implements IFcmToken {
 
     final protected Context mAppContext;
+    final protected ReactContext mReactContext;
     final protected JsIOHelper mJsIOHelper;
 
     protected static String sToken;
 
-    protected FcmToken(Context appContext) {
+    protected FcmToken(Context appContext, ReactContext reactContext) {
         if (!(appContext instanceof ReactApplication)) {
             throw new IllegalStateException("Application instance isn't a react-application");
         }
         mJsIOHelper = new JsIOHelper();
         mAppContext = appContext;
+        mReactContext = reactContext;
     }
 
-    public static IFcmToken get(Context context) {
+    public static IFcmToken get(Context context, ReactContext reactContext) {
         Context appContext = context.getApplicationContext();
         if (appContext instanceof INotificationsFcmApplication) {
             return ((INotificationsFcmApplication) appContext).getFcmToken(context);
         }
-        return new FcmToken(appContext);
+
+        return new FcmToken(appContext, reactContext);
     }
 
     @Override
@@ -87,15 +90,24 @@ public class FcmToken implements IFcmToken {
             });
     }
 
+    private void sendEvent(ReactContext context){
+        Bundle tokenMap = new Bundle();
+        tokenMap.putString("deviceToken", sToken);
+        mJsIOHelper.sendEventToJS(TOKEN_RECEIVED_EVENT_NAME, tokenMap, mReactContext);
+    }
+
     protected void sendTokenToJS() {
         final ReactInstanceManager instanceManager = ((ReactApplication) mAppContext).getReactNativeHost().getReactInstanceManager();
         final ReactContext reactContext = instanceManager.getCurrentReactContext();
 
         // Note: Cannot assume react-context exists cause this is an async dispatched service.
-        if (reactContext != null && reactContext.hasActiveCatalystInstance()) {
-            Bundle tokenMap = new Bundle();
-            tokenMap.putString("deviceToken", sToken);
-            mJsIOHelper.sendEventToJS(TOKEN_RECEIVED_EVENT_NAME, tokenMap, reactContext);
+        if (mReactContext != null && mReactContext.hasActiveCatalystInstance()) {
+            sendEvent(mReactContext);
+            return;
+        } else if (reactContext != null && reactContext.hasActiveCatalystInstance()) {
+            sendEvent(reactContext);
         }
+
+        Log.w(LOGTAG, "Can't get ReactContext in FcmToken.sendTokenToJS()");
     }
 }
