@@ -3,10 +3,10 @@ import groovy.json.JsonSlurper
 
 buildscript {
     ext{
-        androidGradlePluginVersion = '4.0.0'
-        kotlinVersion = "1.3.61"
-        googleServices = "4.3.3"
-        androidSdkVersion = 33
+        androidGradlePluginVersion = '8.7.2'
+        kotlinVersion = "2.1.0"
+        googleServices = "4.4.2"
+        androidSdkVersion = 35
     }
 
     repositories {

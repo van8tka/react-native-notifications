@@ -1,36 +1,38 @@
 package com.wix.reactnativenotifications.fcm;
 
-import androidx.annotation.NonNull;
-import androidx.core.app.JobIntentService;
 import android.content.Context;
-import android.content.Intent;
-import com.facebook.react.bridge.ReactContext;
+import androidx.annotation.NonNull;
+import androidx.work.Worker;
+import androidx.work.WorkerParameters;
 
-public class FcmInstanceIdRefreshHandlerService extends JobIntentService {
+public class FcmInstanceIdRefreshHandlerService extends Worker {
 
-    public static String EXTRA_IS_APP_INIT = "isAppInit";
-    public static String EXTRA_MANUAL_REFRESH = "doManualRefresh";
-    public static final int JOB_ID = 2400;
-    private static ReactContext mReactContext;
+    public static final String EXTRA_IS_APP_INIT = "isAppInit";
+    public static final String EXTRA_MANUAL_REFRESH = "doManualRefresh";
 
-    public static void enqueueWork(Context context, Intent work, ReactContext reactContext) {
-        mReactContext = reactContext;
-        enqueueWork(context, FcmInstanceIdRefreshHandlerService.class, JOB_ID, work);
+    public FcmInstanceIdRefreshHandlerService(@NonNull Context context, @NonNull WorkerParameters params) {
+        super(context, params);
     }
 
+    @NonNull
     @Override
-    protected void onHandleWork(@NonNull Intent intent) {
-        IFcmToken fcmToken = FcmToken.get(this, mReactContext);
+    public Result doWork() {
+        IFcmToken fcmToken = FcmToken.get(getApplicationContext());
         if (fcmToken == null) {
-            return;
+            return Result.failure();
         }
 
-        if (intent.getBooleanExtra(EXTRA_IS_APP_INIT, false)) {
+        boolean isAppInit = getInputData().getBoolean(EXTRA_IS_APP_INIT, false);
+        boolean doManualRefresh = getInputData().getBoolean(EXTRA_MANUAL_REFRESH, false);
+
+        if (isAppInit) {
             fcmToken.onAppReady();
-        } else if (intent.getBooleanExtra(EXTRA_MANUAL_REFRESH, false)) {
+        } else if (doManualRefresh) {
             fcmToken.onManualRefresh();
         } else {
             fcmToken.onNewTokenReady();
         }
+
+        return Result.success();
     }
 }
