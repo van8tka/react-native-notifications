@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.core.app.JobIntentService;
 import android.content.Context;
 import android.content.Intent;
+import com.facebook.react.bridge.ReactContext;
 
 public class FcmInstanceIdRefreshHandlerService extends JobIntentService {
 
