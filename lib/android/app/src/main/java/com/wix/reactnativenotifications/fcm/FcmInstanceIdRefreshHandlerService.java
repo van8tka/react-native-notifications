@@ -10,7 +10,7 @@ public class FcmInstanceIdRefreshHandlerService extends JobIntentService {
     public static String EXTRA_IS_APP_INIT = "isAppInit";
     public static String EXTRA_MANUAL_REFRESH = "doManualRefresh";
     public static final int JOB_ID = 2400;
-    private static final ReactContext mReactContext;
+    private static ReactContext mReactContext;
 
     public static void enqueueWork(Context context, Intent work, ReactContext reactContext) {
         mReactContext = reactContext;

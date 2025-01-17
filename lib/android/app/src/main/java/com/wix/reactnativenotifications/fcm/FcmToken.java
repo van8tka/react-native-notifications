@@ -93,7 +93,7 @@ public class FcmToken implements IFcmToken {
     private void sendEvent(ReactContext context){
         Bundle tokenMap = new Bundle();
         tokenMap.putString("deviceToken", sToken);
-        mJsIOHelper.sendEventToJS(TOKEN_RECEIVED_EVENT_NAME, tokenMap, mReactContext);
+        mJsIOHelper.sendEventToJS(TOKEN_RECEIVED_EVENT_NAME, tokenMap, context);
     }
 
     protected void sendTokenToJS() {
