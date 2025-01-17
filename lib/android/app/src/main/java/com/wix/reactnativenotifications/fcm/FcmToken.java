@@ -102,10 +102,14 @@ public class FcmToken implements IFcmToken {
 
         // Note: Cannot assume react-context exists cause this is an async dispatched service.
         if (mReactContext != null && mReactContext.hasActiveCatalystInstance()) {
+        Log.i(LOGTAG, "sendTokenToJS with mReactContext");
             sendEvent(mReactContext);
             return;
-        } else if (reactContext != null && reactContext.hasActiveCatalystInstance()) {
+        }
+        if (reactContext != null && reactContext.hasActiveCatalystInstance()) {
+        Log.i(LOGTAG, "sendTokenToJS with reactContext");
             sendEvent(reactContext);
+            return;
         }
 
         Log.w(LOGTAG, "Can't get ReactContext in FcmToken.sendTokenToJS()");
