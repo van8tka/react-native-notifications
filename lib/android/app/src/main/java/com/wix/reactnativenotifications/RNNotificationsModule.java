@@ -30,10 +30,6 @@ import com.wix.reactnativenotifications.fcm.FcmInstanceIdRefreshHandlerService;
 
 import static com.wix.reactnativenotifications.Defs.LOGTAG;
 
-import androidx.work.Data;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.WorkManager;
-
 public class RNNotificationsModule extends ReactContextBaseJavaModule implements ActivityEventListener {
 
     final private ReactContext mReactContext;
@@ -53,7 +49,7 @@ public class RNNotificationsModule extends ReactContextBaseJavaModule implements
 
     @Override
     public void initialize() {
-        Log.d(LOGTAG, "Native module init");
+        if(BuildConfig.DEBUG) Log.d(LOGTAG, "Native module init");
         startFcmIntentService(FcmInstanceIdRefreshHandlerService.EXTRA_IS_APP_INIT);
 
         final IPushNotificationsDrawer notificationsDrawer = PushNotificationsDrawer.get(getReactApplicationContext().getApplicationContext());
@@ -78,13 +74,13 @@ public class RNNotificationsModule extends ReactContextBaseJavaModule implements
 
     @ReactMethod
     public void refreshToken() {
-        Log.d(LOGTAG, "Native method invocation: refreshToken()");
+        if(BuildConfig.DEBUG) Log.d(LOGTAG, "Native method invocation: refreshToken()");
         startFcmIntentService(FcmInstanceIdRefreshHandlerService.EXTRA_MANUAL_REFRESH);
     }
 
     @ReactMethod
     public void getInitialNotification(final Promise promise) {
-         Log.d(LOGTAG, "Native method invocation: getInitialNotification");
+        if(BuildConfig.DEBUG) Log.d(LOGTAG, "Native method invocation: getInitialNotification");
         Object result = null;
 
         try {
@@ -104,7 +100,7 @@ public class RNNotificationsModule extends ReactContextBaseJavaModule implements
 
     @ReactMethod
     public void postLocalNotification(ReadableMap notificationPropsMap, int notificationId) {
-          Log.d(LOGTAG, "Native method invocation: postLocalNotification");
+        if(BuildConfig.DEBUG) Log.d(LOGTAG, "Native method invocation: postLocalNotification");
         final Bundle notificationProps = Arguments.toBundle(notificationPropsMap);
         final IPushNotification pushNotification = PushNotification.get(getReactApplicationContext().getApplicationContext(), notificationProps);
         pushNotification.onPostRequest(notificationId);
@@ -118,9 +114,9 @@ public class RNNotificationsModule extends ReactContextBaseJavaModule implements
 
     @ReactMethod
     public void setCategories(ReadableArray categories) {
-
+    
     }
-
+    
     public void cancelDeliveredNotification(String tag, int notificationId) {
         IPushNotificationsDrawer notificationsDrawer = PushNotificationsDrawer.get(getReactApplicationContext().getApplicationContext());
         notificationsDrawer.onNotificationClearRequest(tag, notificationId);
@@ -149,22 +145,8 @@ public class RNNotificationsModule extends ReactContextBaseJavaModule implements
 
     protected void startFcmIntentService(String extraFlag) {
         final Context appContext = getReactApplicationContext().getApplicationContext();
-
-        Data inputData = new Data.Builder()
-                .putBoolean(extraFlag, true)
-                .build();
-
-        OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(FcmInstanceIdRefreshHandlerService.class)
-                .setInputData(inputData)
-                .build();
-
-        WorkManager.getInstance(appContext).enqueue(workRequest);
+        final Intent tokenFetchIntent = new Intent(appContext, FcmInstanceIdRefreshHandlerService.class);
+        tokenFetchIntent.putExtra(extraFlag, true);
+        FcmInstanceIdRefreshHandlerService.enqueueWork(appContext, tokenFetchIntent, mReactContext);
     }
-
-//    protected void startFcmIntentService(String extraFlag) {
-//        final Context appContext = getReactApplicationContext().getApplicationContext();
-//        final Intent tokenFetchIntent = new Intent(appContext, FcmInstanceIdRefreshHandlerService.class);
-//        tokenFetchIntent.putExtra(extraFlag, true);
-//        FcmInstanceIdRefreshHandlerService.enqueueWork(appContext, tokenFetchIntent, mReactContext);
-//    }
 }

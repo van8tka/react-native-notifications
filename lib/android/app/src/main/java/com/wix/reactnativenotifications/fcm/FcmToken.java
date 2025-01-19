@@ -8,6 +8,7 @@ import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.bridge.ReactContext;
 import com.google.firebase.messaging.FirebaseMessaging;
+import com.wix.reactnativenotifications.BuildConfig;
 import com.wix.reactnativenotifications.core.JsIOHelper;
 
 import static com.wix.reactnativenotifications.Defs.LOGTAG;
@@ -16,25 +17,27 @@ import static com.wix.reactnativenotifications.Defs.TOKEN_RECEIVED_EVENT_NAME;
 public class FcmToken implements IFcmToken {
 
     final protected Context mAppContext;
+    final protected ReactContext mReactContext;
     final protected JsIOHelper mJsIOHelper;
 
     protected static String sToken;
 
-    protected FcmToken(Context appContext) {
+    protected FcmToken(Context appContext, ReactContext reactContext) {
         if (!(appContext instanceof ReactApplication)) {
             throw new IllegalStateException("Application instance isn't a react-application");
         }
         mJsIOHelper = new JsIOHelper();
         mAppContext = appContext;
+        mReactContext = reactContext;
     }
 
-    public static IFcmToken get(Context context) {
+    public static IFcmToken get(Context context, ReactContext reactContext) {
         Context appContext = context.getApplicationContext();
         if (appContext instanceof INotificationsFcmApplication) {
             return ((INotificationsFcmApplication) appContext).getFcmToken(context);
         }
 
-        return new FcmToken(appContext);
+        return new FcmToken(appContext, reactContext);
     }
 
     @Override
@@ -48,10 +51,10 @@ public class FcmToken implements IFcmToken {
     public void onManualRefresh() {
         synchronized (mAppContext) {
             if (sToken == null) {
-                Log.i(LOGTAG, "Manual token refresh => asking for new token");
+                if(BuildConfig.DEBUG) Log.i(LOGTAG, "Manual token refresh => asking for new token");
                 refreshToken();
             } else {
-                Log.i(LOGTAG, "Manual token refresh => publishing existing token ("+sToken+")");
+                if(BuildConfig.DEBUG) Log.i(LOGTAG, "Manual token refresh => publishing existing token ("+sToken+")");
                 sendTokenToJS();
             }
         }
@@ -61,11 +64,11 @@ public class FcmToken implements IFcmToken {
     public void onAppReady() {
         synchronized (mAppContext) {
             if (sToken == null) {
-                Log.i(LOGTAG, "App initialized => asking for new token");
+                if(BuildConfig.DEBUG) Log.i(LOGTAG, "App initialized => asking for new token");
                 refreshToken();
             } else {
                 // Except for first run, this should be the case.
-                Log.i(LOGTAG, "App initialized => publishing existing token ("+sToken+")");
+                if(BuildConfig.DEBUG) Log.i(LOGTAG, "App initialized => publishing existing token ("+sToken+")");
                 sendTokenToJS();
             }
         }
@@ -75,14 +78,14 @@ public class FcmToken implements IFcmToken {
         FirebaseMessaging.getInstance().getToken()
             .addOnCompleteListener(task -> {
                 if (!task.isSuccessful()) {
-                    Log.w(LOGTAG, "Fetching FCM registration token failed", task.getException());
+                    if (BuildConfig.DEBUG) Log.w(LOGTAG, "Fetching FCM registration token failed", task.getException());
                     return;
                 }
                 sToken = task.getResult();
                 if (mAppContext instanceof IFcmTokenListenerApplication) {
                     ((IFcmTokenListenerApplication) mAppContext).onNewFCMToken(sToken);
                 }
-                Log.i(LOGTAG, "FCM has a new token" + "=" + sToken);
+                if (BuildConfig.DEBUG) Log.i(LOGTAG, "FCM has a new token" + "=" + sToken);
                 sendTokenToJS();
             });
     }
@@ -98,6 +101,11 @@ public class FcmToken implements IFcmToken {
         final ReactContext reactContext = instanceManager.getCurrentReactContext();
 
         // Note: Cannot assume react-context exists cause this is an async dispatched service.
+        if (mReactContext != null && mReactContext.hasActiveCatalystInstance()) {
+        Log.i(LOGTAG, "sendTokenToJS with mReactContext");
+            sendEvent(mReactContext);
+            return;
+        }
         if (reactContext != null && reactContext.hasActiveCatalystInstance()) {
         Log.i(LOGTAG, "sendTokenToJS with reactContext");
             sendEvent(reactContext);
